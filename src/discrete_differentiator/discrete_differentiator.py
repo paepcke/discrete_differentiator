@@ -24,15 +24,20 @@ import argparse
 import csv
 import os
 import sys
-import unittest
-
 
 class DiscreteDifferentiator(object):
     
     # ------------------------------  Public --------------------------------
 
     @classmethod
-    def differentiate(theClass, seqOrFileName, xDelta=1, outFileFd=sys.stdout, colIndex=0, csvDelimiter=',', csvQuotechar='"', skipLines=0):
+    def differentiate(theClass, 
+                      seqOrFileName, 
+                      xDelta=1, 
+                      outFileFd=sys.stdout, 
+                      colIndex=0, 
+                      csvDelimiter=',', 
+                      csvQuotechar='"', 
+                      skipLines=0):
         '''
         Main and only (class) method. So, call with DiscreteDifferentiator.differentiate(...)
         The sequence is assumed to be the Y-values of a function over an
@@ -79,7 +84,7 @@ class DiscreteDifferentiator(object):
         try:
             seq = theClass.importSequence(seqOrFileName, colIndex=colIndex, csvDelimiter=csvDelimiter, csvQuotechar=csvQuotechar, skipLines=skipLines)
         except ValueError as e:
-            outFileFd.write('Error during file import: ' + `e`)
+            outFileFd.write('Error during file import: ' + repr(e))
         res = []
         res.append((-(seq[0+2*xDelta]) + 4*seq[0+xDelta] - 3*seq[0])/float(2*xDelta))
         for indx in range(1,len(seq)-1):
@@ -93,7 +98,7 @@ class DiscreteDifferentiator(object):
     # ------------------------------  Private --------------------------------
     
     @classmethod
-    def importSequence(theClass, seqOrFileName, colIndex=0, csvDelimiter=',', csvQuotechar='"', skipLines=0):
+    def importSequence(cls, seqOrFileName, colIndex=0, csvDelimiter=',', csvQuotechar='"', skipLines=0):
         '''
         Import the sequence of numbers, either given a sequence
         as an array, or a file name.
@@ -120,7 +125,7 @@ class DiscreteDifferentiator(object):
             with open(seqOrFileName, 'r') as fd:
                 csvReader = csv.reader(fd, delimiter=csvDelimiter, quotechar=csvQuotechar)
                 for i in range(skipLines): #@UnusedVariable
-                    csvReader.next()
+                    next(csvReader)
                 for rowArr in csvReader:
                     try:
                         num = float(rowArr[colIndex])
@@ -132,50 +137,8 @@ class DiscreteDifferentiator(object):
                             continue
                     seq.append(num)
         return seq
-                    
-class TestDifferentiator(unittest.TestCase):
-
-    def testLinearFunc(self):
-        # f(x) = 2x+3
-        # df/dx = 2
-        testSeq = []
-        for x in range(20):
-            testSeq.append(2*x+3)
-        res = DiscreteDifferentiator.differentiate(testSeq, 1, outFileFd=open(os.devnull,'w'))
-        expected = [2 for i in range(20)] #@UnusedVariable
-        self.assertEqual(expected, res, 'Linear func failed')
-        
-    def testLinearFuncWithUptickAtStart(self):
-        # f(x) = 2x+3
-        # df/dx = 2
-        testSeq = []
-        for x in range(1,20):
-            testSeq.append(2*x+3)
-        testSeq[0] = 0
-        res = DiscreteDifferentiator.differentiate(testSeq, 1, outFileFd=open(os.devnull,'w'))
-        expected = [2 for i in range(1,20)] #@UnusedVariable
-        expected[0] = 9.5
-        expected[1] = 4.5
-        self.assertEqual(expected, res, 'Linear func with uptick failed')
-        
-    def testSingleColFile(self):
-        res = DiscreteDifferentiator.differentiate('TestData/singleCol.csv', 1, outFileFd=open(os.devnull,'w'))
-        expected = [2 for i in range(20)] #@UnusedVariable
-        self.assertEqual(expected, res, 'Linear func from single column file failed')
-        
-    def testTwoColFile(self):
-        res = DiscreteDifferentiator.differentiate('TestData/twoCol.csv', 1, outFileFd=open(os.devnull,'w'), colIndex=1)
-        expected = [2 for i in range(20)] #@UnusedVariable
-        self.assertEqual(expected, res, 'Linear func from two column file failed')
-        
-    def testSingleColFileWithColHeader(self):
-        res = DiscreteDifferentiator.differentiate('TestData/singleColWithHeader.csv', 1, outFileFd=open(os.devnull,'w'), skipLines=1)
-        expected = [2 for i in range(20)] #@UnusedVariable
-        self.assertEqual(expected, res, 'Linear func from single column file with column header failed')
 
 if __name__ == '__main__':
-    #unittest.main()
-    #sys.exit()
     
     parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]), formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-i', '--colIndex', 
